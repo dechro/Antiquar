@@ -17,9 +17,17 @@
     pkgs.libxkbcommon
     pkgs.fontconfig
     pkgs.slint-lsp
+    pkgs.wayland
     # pkgs.slint-viewer
   ];
   env = {
-    LD_LIBRARY_PATH = "/run/current-system/sw/lib:/usr/lib";
+    LD_LIBRARY_PATH = lib.makeLibraryPath [
+      pkgs.mesa
+      pkgs.libGL
+      pkgs.libGLU
+      pkgs.libxkbcommon
+      pkgs.fontconfig
+      pkgs.wayland
+    ];
   };
 }

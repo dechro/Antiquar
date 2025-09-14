@@ -1,13 +1,13 @@
-use nix::fcntl::{Flock, FlockArg};
+use fs4::fs_std::FileExt;
 use regex::bytes::Regex;
+use std::collections::HashMap;
+use std::fs::create_dir_all;
 use std::fs::OpenOptions;
-use std::fs::{self, create_dir_all, File};
-use std::io;
-use std::io::prelude::*;
-use std::os::unix::io::AsRawFd;
+use std::io::Read;
 use std::path::Path;
+use toml::de::Error;
 use toml::Table;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 slint::include_modules!();
 
@@ -44,16 +44,42 @@ fn main() -> Result<(), slint::PlatformError> {
     let mut bookfiles = vec![];
 
     for f in files {
-        let file = OpenOptions::new()
+        let mut file = OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
-            .open(datapath.join(f))
+            .open(datapath.join(f.clone()))
             .unwrap();
-        let lock = Flock::lock(file, FlockArg::LockExclusive).expect("Couldn't acquire lock");
+        if file.try_lock_exclusive().unwrap() == false {
+            eprintln!("Failed to acquire lock on file: {:#?}", datapath.join(f));
+            panic!()
+        }
 
-        bookfiles.push(lock);
+        bookfiles.push((file, f));
     }
+
+    println!("{:#?}", bookfiles);
+
+    let mut deserdata = HashMap::new();
+
+    for mut file in bookfiles {
+        let mut content = String::new();
+        file.0.read_to_string(&mut content).expect("");
+        let dlized: Result<Table, Error> = toml::from_str(&content.as_str());
+        match dlized {
+            Ok(_) => deserdata.insert(file.1[..5].to_string(), dlized.unwrap()),
+            Err(_) => {
+                eprintln!(
+                    "Could'nt parse toml file {:#?} with content:\n\n{}",
+                    datapath.join(file.1),
+                    content
+                );
+                panic!()
+            }
+        };
+    }
+
+    println!("{:#?}", deserdata);
 
     let main_window = MainWindow::new()?;
 
