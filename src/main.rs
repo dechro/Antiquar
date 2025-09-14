@@ -13,6 +13,90 @@ use walkdir::WalkDir;
 
 slint::include_modules!();
 
+#[derive(Deserialize, Serialize)]
+struct Book {
+    author: Option<String>,
+    title: String,
+    year: Option<u16>,
+    cover: String,
+    location: Option<String>,
+    condition: u8,
+    edition: Option<String>,
+    publisher: Option<String>,
+    category: u16,
+    description: String,
+    language: String,
+    isbn: Option<String>,
+    pages: String,
+    format: String,
+    weight: u16,
+    price: u16,
+    cover_url: Option<String>,
+    keywords: Option<Vec<String>>,
+    new: bool,
+    first_edition: bool,
+    signed: bool,
+    unused: bool,
+    personal_notice: Option<String>,
+    unlimited: bool,
+}
+
+impl Book {
+    fn new(
+        author: Option<String>,
+        title: String,
+        year: Option<u16>,
+        cover: String,
+        location: Option<String>,
+        condition: u8,
+        edition: Option<String>,
+        publisher: Option<String>,
+        category: u16,
+        description: String,
+        language: String,
+        isbn: Option<String>,
+        pages: String,
+        format: String,
+        weight: u16,
+        price: u16,
+        cover_url: Option<String>,
+        keywords: Option<Vec<String>>,
+        new: bool,
+        first_edition: bool,
+        signed: bool,
+        unused: bool,
+        personal_notice: Option<String>,
+        unlimited: bool,
+    ) -> Self {
+        Self {
+            author,
+            title,
+            year,
+            cover,
+            location,
+            condition,
+            edition,
+            publisher,
+            category,
+            description,
+            language,
+            isbn,
+            pages,
+            format,
+            weight,
+            price,
+            cover_url,
+            keywords,
+            new,
+            first_edition,
+            signed,
+            unused,
+            personal_notice,
+            unlimited,
+        }
+    }
+}
+
 fn main() -> Result<(), slint::PlatformError> {
     let datapath = Path::new("/home/robertd/test/Antiquar");
     if datapath.try_exists().is_err() {
@@ -35,13 +119,10 @@ fn main() -> Result<(), slint::PlatformError> {
     {
         files.push(entry.file_name().to_str().unwrap().to_string())
     }
-    println!("{:#?}", files);
 
     let filenameregex = Regex::new(r"^\d{5}.toml$").unwrap();
 
     files.retain(|f| filenameregex.is_match(&f.as_bytes()));
-
-    println!("{:#?}", files);
 
     let mut bookfiles = vec![];
 
@@ -60,16 +141,14 @@ fn main() -> Result<(), slint::PlatformError> {
         bookfiles.push((file, f));
     }
 
-    println!("{:#?}", bookfiles);
-
     let mut deserdata = HashMap::new();
 
     for mut file in bookfiles {
         let mut content = String::new();
         file.0.read_to_string(&mut content).expect("");
-        let dlized: Result<Table, Error> = toml::from_str(&content.as_str());
-        match dlized {
-            Ok(_) => deserdata.insert(file.1[..5].to_string(), (dlized.unwrap(), file)),
+        let deserialized: Result<Table, Error> = toml::from_str(&content.as_str());
+        match deserialized {
+            Ok(_) => deserdata.insert(file.1[..5].to_string(), (deserialized.unwrap(), file)),
             Err(_) => {
                 eprintln!(
                     "Could'nt parse toml file {:#?} with content:\n\n{}",
@@ -81,13 +160,9 @@ fn main() -> Result<(), slint::PlatformError> {
         };
     }
 
-    println!("{:#?}", deserdata);
-
     let mut emptyfiles = Vec::new();
 
     for (id, content) in &deserdata {
-        println!("{id}");
-        println!("{content:#?}");
         if content.0 == Table::default() {
             content.1 .0.unlock().unwrap();
             remove_file(datapath.join(content.1 .1.clone())).unwrap();
@@ -96,10 +171,21 @@ fn main() -> Result<(), slint::PlatformError> {
     }
 
     for file in emptyfiles {
-        &deserdata.remove(&file);
+        let _ = &deserdata.remove(&file);
     }
 
+    let book_entries: Vec<booklistentry> = deserdata
+        .keys()
+        .into_iter()
+        .map(|key| booklistentry {
+            id: key.clone().into(),
+        })
+        .collect();
+
+    let books_model = std::rc::Rc::new(slint::VecModel::from(book_entries));
     let main_window = MainWindow::new()?;
+
+    main_window.set_entries(books_model.clone().into());
 
     main_window.run()
 }
