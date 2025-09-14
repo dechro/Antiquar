@@ -3,6 +3,20 @@
 version = 4
 
 [[package]]
+name = "Antiquar"
+version = "0.1.0"
+dependencies = [
+ "fs4",
+ "nix",
+ "regex",
+ "serde",
+ "slint",
+ "slint-build",
+ "toml 0.9.5",
+ "walkdir",
+]
+
+[[package]]
 name = "ab_glyph"
 version = "0.2.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3983,20 +3997,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "spin_on",
-]
-
-[[package]]
-name = "slint-rust-template"
-version = "0.1.0"
-dependencies = [
- "fs4",
- "nix",
- "regex",
- "serde",
- "slint",
- "slint-build",
- "toml 0.9.5",
- "walkdir",
 ]
 
 [[package]]
