@@ -1,7 +1,9 @@
 use fs4::fs_std::FileExt;
 use regex::bytes::Regex;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::create_dir_all;
+use std::fs::remove_file;
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::Path;
@@ -51,7 +53,7 @@ fn main() -> Result<(), slint::PlatformError> {
             .open(datapath.join(f.clone()))
             .unwrap();
         if file.try_lock_exclusive().unwrap() == false {
-            eprintln!("Failed to acquire lock on file: {:#?}", datapath.join(f));
+            eprintln!("Failed to acquire lock for file: {:#?}", datapath.join(f));
             panic!()
         }
 
@@ -67,7 +69,7 @@ fn main() -> Result<(), slint::PlatformError> {
         file.0.read_to_string(&mut content).expect("");
         let dlized: Result<Table, Error> = toml::from_str(&content.as_str());
         match dlized {
-            Ok(_) => deserdata.insert(file.1[..5].to_string(), dlized.unwrap()),
+            Ok(_) => deserdata.insert(file.1[..5].to_string(), (dlized.unwrap(), file)),
             Err(_) => {
                 eprintln!(
                     "Could'nt parse toml file {:#?} with content:\n\n{}",
@@ -80,6 +82,22 @@ fn main() -> Result<(), slint::PlatformError> {
     }
 
     println!("{:#?}", deserdata);
+
+    let mut emptyfiles = Vec::new();
+
+    for (id, content) in &deserdata {
+        println!("{id}");
+        println!("{content:#?}");
+        if content.0 == Table::default() {
+            content.1 .0.unlock().unwrap();
+            remove_file(datapath.join(content.1 .1.clone())).unwrap();
+            emptyfiles.push(id.clone());
+        }
+    }
+
+    for file in emptyfiles {
+        &deserdata.remove(&file);
+    }
 
     let main_window = MainWindow::new()?;
 
