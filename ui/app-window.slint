@@ -1,21 +1,25 @@
-import { ScrollView, Switch, HorizontalBox, StyleMetrics, ListView, VerticalBox } from "std-widgets.slint";
+import { ScrollView, Switch, HorizontalBox, StyleMetrics, ListView, VerticalBox, Palette } from "std-widgets.slint";
 
 struct booklistentry {
     id: string,
 }
 
-component bookentry inherits Rectangle {
+component bookentry inherits VerticalLayout {
     in property <string> id;
 
-    border-radius: 6px;
-    background: slategray;
-
-    Text {
-        text: id;
-        font-size: 14px;
-        font-family: "monospace";
-        vertical-alignment: center;
-        horizontal-alignment: left;
+    Rectangle {
+        Rectangle {
+            background: Palette.background;
+            border-radius: 10px;
+            height: 50px;
+            Text {
+                text: id;
+                font-size: 14px;
+                font-family: "monospace";
+                vertical-alignment: center;
+                horizontal-alignment: left;
+            }
+        }
     }
 }
 
@@ -23,7 +27,6 @@ export component MainWindow inherits Window {
     in property <[booklistentry]> entries: [{ id: "" }];
 
     VerticalBox {
-        // alignment: start;
         spacing: 10px;
         padding: 10px;
 
@@ -35,10 +38,14 @@ export component MainWindow inherits Window {
             text: "Auto Refresh";
         }
 
-        ListView {
-            for entry in entries: bookentry {
-                padding: 10px;
-                id: entry.id;
+        Rectangle {
+            background: Palette.background;
+            ListView {
+
+                for entry in entries: bookentry {
+                    padding: 20px;
+                    id: entry.id;
+                }
             }
         }
     }
